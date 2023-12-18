@@ -6,3 +6,4 @@ src/
 results/
 working_card/
 *egg-info*
+.idea/
