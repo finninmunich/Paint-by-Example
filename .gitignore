@@ -1,0 +1,8 @@
+checkpoints/
+jidu/
+requirements.txt
+src/
+*__pycache__*
+results/
+working_card/
+*egg-info*

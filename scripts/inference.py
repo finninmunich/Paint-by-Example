@@ -1,4 +1,6 @@
 import argparse, os, sys, glob
+import sys
+sys.path.append('./')
 import cv2
 import torch
 import numpy as np
@@ -25,7 +27,7 @@ from torchvision.transforms import Resize
 wm = "Paint-by-Example"
 wm_encoder = WatermarkEncoder()
 wm_encoder.set_watermark('bytes', wm.encode('utf-8'))
-safety_model_id = "CompVis/stable-diffusion-safety-checker"
+safety_model_id = "/home/turing/cfs_cz/finn/codes/huggingface/CompVis/stable-diffusion-safety-checker"
 safety_feature_extractor = AutoFeatureExtractor.from_pretrained(safety_model_id)
 safety_checker = StableDiffusionSafetyChecker.from_pretrained(safety_model_id)
 
@@ -123,6 +125,17 @@ def get_tensor_clip(normalize=True, toTensor=True):
                                                 (0.26862954, 0.26130258, 0.27577711))]
     return torchvision.transforms.Compose(transform_list)
 
+
+def image_resizer(image_path,mode='RGB'):
+    image = Image.open(image_path)
+    width, height = image.size
+    new_width = (width // 8) * 8
+    new_height = (height // 8) * 8
+
+    if new_width != width or new_height != height:
+        image = image.resize((new_width, new_height))
+    image = image.convert(mode)
+    return image
 
 def main():
     parser = argparse.ArgumentParser()
@@ -303,13 +316,15 @@ def main():
         with precision_scope("cuda"):
             with model.ema_scope():
                 filename=os.path.basename(opt.image_path)
-                img_p = Image.open(opt.image_path).convert("RGB")
+                #img_p = Image.open(opt.image_path).convert("RGB")
+                img_p = image_resizer(opt.image_path).resize((512,512))
                 image_tensor = get_tensor()(img_p)
                 image_tensor = image_tensor.unsqueeze(0)
                 ref_p = Image.open(opt.reference_path).convert("RGB").resize((224,224))
                 ref_tensor=get_tensor_clip()(ref_p)
                 ref_tensor = ref_tensor.unsqueeze(0)
-                mask=Image.open(opt.mask_path).convert("L")
+                #mask=Image.open(opt.mask_path).convert("L")
+                mask = image_resizer(opt.mask_path,mode='L').resize((512,512))
                 mask = np.array(mask)[None,None]
                 mask = 1 - mask.astype(np.float32)/255.0
                 mask[mask < 0.5] = 0
